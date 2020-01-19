@@ -29,9 +29,7 @@ contract StorePool is StorePool_Ownable {
      * @param name The name of storeplace
      * @return id of the created store
      */
-    function createStore(string memory name) 
-    public 
-    returns (uint256) {
+    function createStore(string memory name) public returns (uint256) {
         stores.push(Store(name));
         uint256 id = SafeMath.sub(stores.length, 1);
         storeToOwner[id] = msg.sender;
@@ -42,9 +40,7 @@ contract StorePool is StorePool_Ownable {
     /**
      * @notice Renouncing ownership will leave the contract without an store owner, thereby removing any functionality that is only available to the store owner (e.g. creating new Item Types).
      */
-    function renounceStoreOwnership(uint256 storeId)
-    public 
-    onlyStoreOwner(storeId) {
+    function renounceStoreOwnership(uint256 storeId) public onlyStoreOwner(storeId) {
         emit StoreOwnershipTransferred(storeId, storeToOwner[storeId], address(0));
         storeToOwner[storeId] = address(0);
     }
@@ -52,9 +48,7 @@ contract StorePool is StorePool_Ownable {
     /**
      * @notice Transfers ownership of the ('storeId') to a new account (`newOwner`).
      */
-    function transferStoreOwnership(uint256 storeId, address newOwner)
-    public 
-    onlyStoreOwner(storeId) {
+    function transferStoreOwnership(uint256 storeId, address newOwner) public onlyStoreOwner(storeId) {
         require(newOwner != address(0), "StorePool: New owner is the zero address");
         emit StoreOwnershipTransferred(storeId, storeToOwner[storeId], newOwner);
         storeToOwner[storeId] = newOwner;
@@ -62,39 +56,34 @@ contract StorePool is StorePool_Ownable {
     
     
     
-    function getStoreOwner(uint256 storeId)
-    public
-    view
-    returns (address){
-        require(stores.length > storeId, "StorePool: Store does not exist");
+    
+    
+    function getStoreOwner(uint256 storeId) public view returns (address) {
+        require(storeExist(storeId), "StorePool: Store does not exist");
         return storeToOwner[storeId];
     }
     
     /**
      * @notice Chech if it is store owner 
      */
-    function isStoreOwner(uint256 storeId) 
-    public 
-    view 
-    returns (bool) {
-        require(stores.length > storeId, "StorePool: Store does not exist");
+    function isStoreOwner(uint256 storeId) public view returns (bool) {
+        require(storeExist(storeId), "StorePool: Store does not exist");
         return storeToOwner[storeId] == msg.sender;
     }
     
     /**
      * @notice Check if store exist 
      */
-    function storeExist(uint256 storeId)
-    public
-    view
-    returns (bool) {
+    function storeExist(uint256 storeId) public view returns (bool) {
         return stores.length > storeId;
     }
 
 
 
+
+
     modifier onlyStoreOwner(uint256 storeId) {
-        require(stores.length > storeId, "StorePool: Store does not exist");
+        require(storeExist(storeId), "StorePool: Store does not exist");
         require(storeToOwner[storeId] == msg.sender, "StorePool: Caller is not the owner");
         _;
     }

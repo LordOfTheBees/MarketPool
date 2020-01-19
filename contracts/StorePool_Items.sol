@@ -43,9 +43,7 @@ contract StorePool_Items is StorePool {
         bool allowAuction,
         bool allowRent,
         bool allowLootbox) 
-    external 
-    onlyStoreOwner(storeId) 
-    returns (uint256){
+    external onlyStoreOwner(storeId) returns (uint256) {
         storeToItemTypes[storeId].push(Items.ItemType(
             name,
             totalSuply,
@@ -64,69 +62,56 @@ contract StorePool_Items is StorePool {
      * @notice Can call only owner. Create Item for selected Store and Type. Owner of item will be owner of store 
      * @return id of the created item
      */
-    function createItem(
-        uint256 storeId,
-        uint256 typeId
-    ) 
-    public
-    onlyStoreOwner(storeId)
-    returns (uint256) {
+    function createItem(uint256 storeId, uint256 typeId) public onlyStoreOwner(storeId) returns (uint256) {
         return _createItem(storeId, typeId, msg.sender);
     }
     
     /**
      * @notice Can call only item owner. Change item owner to ('to')
      */
-    function transferItem(address to, uint256 storeId, uint256 itemId)
-    public
-    onlyItemOwner(storeId, itemId) {
+    function transferItem(address to, uint256 storeId, uint256 itemId) public onlyItemOwner(storeId, itemId) {
         _transferItem(msg.sender, to, storeId, itemId);
     }
     
     
     
-    function balanceOfItemsOf(
-        address itemsOwner,
-        uint256 storeId)
-    public
-    view
-    returns (uint256) {
-        require(itemsOwner != address(0), "StorePool_Items: StorePool_Items: Attempt to check the balance at the zero address");
-        require(stores.length > storeId, "StorePool_Items: Store does not exist");
+    
+    
+    
+    function balanceOfItemsOf(address itemsOwner, uint256 storeId) public view returns (uint256) {
+        require(itemsOwner != address(0), "StorePool_Items: Attempt to check the balance at the zero address");
+        require(storeExist(storeId), "StorePool_Items: Store does not exist");
         
         return storeToUsersToItemsCount[storeId][msg.sender].current();
     }
     
-    function getItemOwner(
-        uint256 storeId, 
-        uint256 itemId)
-    public
-    view
-    returns(address) {
-        require(stores.length > storeId, "StorePool_Items: Store does not exist");
-        require(storeToItems[storeId].length > itemId, "StorePool_Items: Item Type does not exist");
+    function getItemOwner(uint256 storeId, uint256 itemId) public view returns(address) {
+        require(itemExist(storeId, itemId), "StorePool_Items: Item Type does not exist");
         
         return storeToItemToOwner[storeId][itemId];
     }
     
-    function isItemOwner(uint256 storeId, uint256 itemId)
-    public 
-    view
-    returns (bool) {
-        require(stores.length > storeId, "StorePool_Items: Store does not exist");
-        require(storeToItems[storeId].length > itemId, "StorePool_Items: Item does not exist");
+    function isItemOwner(uint256 storeId, uint256 itemId) public view returns (bool) {
+        require(itemExist(storeId, itemId), "StorePool_Items: Item does not exist");
         
         return storeToItemToOwner[storeId][itemId] == msg.sender;
     }
     
+    function itemTypeExist(uint256 storeId, uint256 typeId) public view returns (bool) {
+        return storeExist(storeId) && storeToItemTypes[storeId].length > typeId;
+    }
+    
+    function itemExist(uint256 storeId,uint256 itemId) public view returns (bool) {
+        return storeExist(storeId) && storeToItems[storeId].length > itemId;
+    }
     
     
-    function _transferItem(
-        address itemOwner,
-        address to,
-        uint256 storeId,
-        uint256 itemId)
-    internal {
+    
+    
+    
+    
+    
+    function _transferItem(address itemOwner, address to, uint256 storeId, uint256 itemId) internal {
         require(getItemOwner(storeId, itemId) == itemOwner, "StorePool_Items: itemOwner is not the real item owner");
         require(to != address(0), "StorePool_Items: Attempt to establish a new owner as a zero address");
         storeToUsersToItemsCount[storeId][itemOwner].decrement();
@@ -141,15 +126,8 @@ contract StorePool_Items is StorePool {
      * @dev Create Item for selected Store and Type. Owner of item will be ('itemOwner')
      * @return id of the created item
      */
-    function _createItem(
-        uint256 storeId,
-        uint256 typeId,
-        address newItemOwner
-    )
-    internal
-    returns (uint256) {
-        require(stores.length > storeId, "StorePool_Items: Store does not exist");
-        require(storeToItemTypes[storeId].length > typeId, "StorePool_Items: Item Type does not exist");
+    function _createItem(uint256 storeId, uint256 typeId, address newItemOwner) internal returns (uint256) {
+        require(itemTypeExist(storeId, typeId), "StorePool_Items: Item Type does not exist");
         require(newItemOwner != address(0), "StorePool_Items: Item Owner is the zero address");
         
         Items.ItemType storage itemType = storeToItemTypes[storeId][typeId];
@@ -169,8 +147,7 @@ contract StorePool_Items is StorePool {
     
     
     modifier onlyItemOwner(uint256 storeId, uint256 itemId) {
-        require(stores.length > storeId, "StorePool_Items: Store does not exist");
-        require(storeToItems[storeId].length > itemId, "StorePool_Items: Item does not exist");
+        require(itemExist(storeId, itemId), "StorePool_Items: Item does not exist");
         require(storeToItemToOwner[storeId][itemId] == msg.sender, "StorePool_Items: It is not owner");
         _;
     }
