@@ -1,4 +1,4 @@
-pragma solidity ^0.5.10;
+pragma solidity >=0.5.0;
 
 import "./StorePool.sol";
 
@@ -57,7 +57,7 @@ contract StorePool_Items is StorePool {
     external 
     onlyStoreOwner(storeId) 
     returns (uint256){
-        uint256 itemTypeId = SafeMath.sub(storeToItemTypes[storeId].push(ItemType(
+        storeToItemTypes[storeId].push(ItemType(
             name,
             totalSuply,
             totalSuply,
@@ -65,7 +65,8 @@ contract StorePool_Items is StorePool {
             allowSale,
             allowAuction,
             allowRent,
-            allowLootbox)), 1);
+            allowLootbox));
+        uint256 itemTypeId = SafeMath.sub(storeToItemTypes[storeId].length, 1);
         emit ItemTypeCreated(storeId, itemTypeId);
         return itemTypeId;
     }
@@ -122,7 +123,8 @@ contract StorePool_Items is StorePool {
         ItemType storage itemType = storeToItemTypes[storeId][typeId];
         require(!itemType.isFinal || itemType.remainingSuply > 0, "Items of this type are over");
 
-        uint256 itemId = SafeMath.sub(storeToItems[storeId].push(Item(typeId)), 1);
+        storeToItems[storeId].push(Item(typeId));
+        uint256 itemId = SafeMath.sub(storeToItems[storeId].length, 1);
         storeToUsersToItemsCount[storeId][itemOwner] = SafeMath.add(storeToUsersToItemsCount[storeId][itemOwner], 1);
         storeToItemToOwner[storeId][itemId] = itemOwner;
         

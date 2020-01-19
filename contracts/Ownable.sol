@@ -1,6 +1,6 @@
-pragma solidity >=0.6.0;
+pragma solidity >=0.5.0;
 
-abstract contract StorePool_Ownable {
+contract StorePool_Ownable {
     address private _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
