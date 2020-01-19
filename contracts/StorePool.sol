@@ -21,8 +21,7 @@ contract StorePool is StorePool_Ownable {
     Store[] public stores;
 
     // ID магазина и их владельцы
-    mapping (uint256 => address) storeToOwner;    
-
+    mapping (uint256 => address) storeToOwner;
 
 
     /**
@@ -60,7 +59,20 @@ contract StorePool is StorePool_Ownable {
         emit StoreOwnershipTransferred(storeId, storeToOwner[storeId], newOwner);
         storeToOwner[storeId] = newOwner;
     }
-
+    
+    
+    
+    function getStoreOwner(uint256 storeId)
+    public
+    view
+    returns (address){
+        require(stores.length > storeId, "Store does not exist");
+        return storeToOwner[storeId];
+    }
+    
+    /**
+     * @notice Chech if it is store owner 
+     */
     function isStoreOwner(uint256 storeId) 
     public 
     view 
@@ -68,6 +80,17 @@ contract StorePool is StorePool_Ownable {
         require(stores.length > storeId, "Store does not exist");
         return storeToOwner[storeId] == msg.sender;
     }
+    
+    /**
+     * @notice Check if store exist 
+     */
+    function storeExist(uint256 storeId)
+    public
+    view
+    returns (bool) {
+        return stores.length > storeId;
+    }
+
 
 
     modifier onlyStoreOwner(uint256 storeId) {

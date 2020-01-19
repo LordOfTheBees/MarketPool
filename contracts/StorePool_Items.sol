@@ -1,46 +1,35 @@
 pragma solidity >=0.5.0;
 
+
+import "../node_modules/OpenZeppelin/contracts/drafts/Counters.sol";
+import "../library/Items.sol";
 import "./StorePool.sol";
 
 contract StorePool_Items is StorePool {
     using SafeMath for uint256;
+    using Counters for Counters.Counter;
+    using Items for Items.ItemType;
+    using Items for Items.Item;
 
     event ItemTypeCreated(uint256 indexed storeId, uint256 indexed itemTypeId);
     event ItemCreated(uint256 indexed storeId, uint256 indexed itemId);
     event ItemOwnershipTransferred(uint256 indexed storeId, uint256 itemId, address indexed previousOwner, address indexed newOwner);
-
-    struct Item {
-        uint256 typeId;
-    }
-
-    struct ItemType {
-        string name;
-
-        uint256 remainingSuply;
-        uint256 totalSuply;
-
-        // Конечное ли количество элементов данного типа
-        bool isFinal;
-
-        bool allowSale;
-        bool allowAuction;
-        bool allowRent;
-        bool allowLootbox;
-    }
+    
 
     // ID магазина к сущещствующим типам предметов
-    mapping (uint256 => ItemType[]) public storeToItemTypes;
+    mapping (uint256 => Items.ItemType[]) public storeToItemTypes;
 
     // ID магазина к созданным предметам. Те которые имеют владельцев.
-    mapping (uint256 => Item[]) public storeToItems;
+    mapping (uint256 => Items.Item[]) public storeToItems;
 
     // ID магазина к адресам и к кол-ом предметов которыми они обладают
-    mapping (uint256 => mapping (address => uint256)) storeToUsersToItemsCount;
+    mapping (uint256 => mapping (address => Counters.Counter)) storeToUsersToItemsCount;
 
     // ID магазина к ID предметам к их владельцам
     mapping (uint256 => mapping (uint256 => address)) storeToItemToOwner;
 
 
+    
     /**
      * @notice Create ItemType for selected Store.
      * @return id of the created ItemType
@@ -57,7 +46,7 @@ contract StorePool_Items is StorePool {
     external 
     onlyStoreOwner(storeId) 
     returns (uint256){
-        storeToItemTypes[storeId].push(ItemType(
+        storeToItemTypes[storeId].push(Items.ItemType(
             name,
             totalSuply,
             totalSuply,
@@ -88,21 +77,59 @@ contract StorePool_Items is StorePool {
     /**
      * @notice Can call only item owner. Change item owner to ('to')
      */
-    function transferItemOwnership(uint256 storeId, uint256 itemId, address to)
+    function transferItem(uint256 storeId, uint256 itemId, address to)
     public
     onlyItemOwner(storeId, itemId) {
         require(to != address(0), "TO is zero address");
-        emit ItemOwnershipTransferred(storeId, itemId, storeToItemToOwner[storeId][itemId], to);
-        storeToItemToOwner[storeId][itemId] = to;
+        _transferItem(msg.sender, to, storeId, itemId);
+    }
+    
+    
+    
+    function balanceOfItems(
+        uint256 storeId)
+    public
+    view
+    returns (uint256) {
+        require(stores.length > storeId, "Store does not exist");
+        return storeToUsersToItemsCount[storeId][msg.sender].current();
+    }
+    
+    function getItemOwner(
+        uint256 storeId, 
+        uint256 itemId)
+    public
+    view
+    returns(address) {
+        require(stores.length > storeId, "Store does not exist");
+        require(storeToItems[storeId].length > itemId, "Item Type does not exist");
+        
+        return storeToItemToOwner[storeId][itemId];
     }
     
     function isItemOwner(uint256 storeId, uint256 itemId)
     public 
     view
     returns (bool) {
+        require(stores.length > storeId, "Store does not exist");
+        require(storeToItems[storeId].length > itemId, "Item does not exist");
         return storeToItemToOwner[storeId][itemId] == msg.sender;
     }
     
+    
+    
+    function _transferItem(
+        address itemOwner,
+        address to,
+        uint256 storeId,
+        uint256 itemId)
+    internal {
+        storeToUsersToItemsCount[storeId][itemOwner].decrement();
+        storeToUsersToItemsCount[storeId][to].increment();
+        storeToItemToOwner[storeId][itemId] = to;
+        
+        emit ItemOwnershipTransferred(storeId, itemId, itemOwner, to);
+    }
     
     
     /**
@@ -112,23 +139,23 @@ contract StorePool_Items is StorePool {
     function _createItem(
         uint256 storeId,
         uint256 typeId,
-        address itemOwner
+        address newItemOwner
     )
     internal
     returns (uint256) {
         require(stores.length > storeId, "Store does not exist");
         require(storeToItemTypes[storeId].length > typeId, "Item Type does not exist");
-        require(itemOwner != address(0), "Item Owner is the zero address");
+        require(newItemOwner != address(0), "Item Owner is the zero address");
         
-        ItemType storage itemType = storeToItemTypes[storeId][typeId];
-        require(!itemType.isFinal || itemType.remainingSuply > 0, "Items of this type are over");
+        Items.ItemType storage itemType = storeToItemTypes[storeId][typeId];
+        require(itemType.itemsOver(), "Items of this type are over");
 
-        storeToItems[storeId].push(Item(typeId));
+        storeToItems[storeId].push(Items.Item(typeId));
         uint256 itemId = SafeMath.sub(storeToItems[storeId].length, 1);
-        storeToUsersToItemsCount[storeId][itemOwner] = SafeMath.add(storeToUsersToItemsCount[storeId][itemOwner], 1);
-        storeToItemToOwner[storeId][itemId] = itemOwner;
+        storeToUsersToItemsCount[storeId][newItemOwner].increment();
+        storeToItemToOwner[storeId][itemId] = newItemOwner;
         
-        if(itemType.isFinal) itemType.remainingSuply = SafeMath.sub(itemType.remainingSuply, 1);
+        itemType.recordItemCreated();
 
         emit ItemCreated(storeId, itemId);
         return itemId;
@@ -139,6 +166,7 @@ contract StorePool_Items is StorePool {
     modifier onlyItemOwner(uint256 storeId, uint256 itemId) {
         require(stores.length > storeId, "Store does not exist");
         require(storeToItems[storeId].length > itemId, "Item does not exist");
+        require(storeToItemToOwner[storeId][itemId] == msg.sender, "It is nnot owner");
         _;
     }
 }
