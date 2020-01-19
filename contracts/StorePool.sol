@@ -55,7 +55,7 @@ contract StorePool is StorePool_Ownable {
     function transferStoreOwnership(uint256 storeId, address newOwner)
     public 
     onlyStoreOwner(storeId) {
-        require(newOwner != address(0), "New owner is the zero address");
+        require(newOwner != address(0), "StorePool: New owner is the zero address");
         emit StoreOwnershipTransferred(storeId, storeToOwner[storeId], newOwner);
         storeToOwner[storeId] = newOwner;
     }
@@ -66,7 +66,7 @@ contract StorePool is StorePool_Ownable {
     public
     view
     returns (address){
-        require(stores.length > storeId, "Store does not exist");
+        require(stores.length > storeId, "StorePool: Store does not exist");
         return storeToOwner[storeId];
     }
     
@@ -77,7 +77,7 @@ contract StorePool is StorePool_Ownable {
     public 
     view 
     returns (bool) {
-        require(stores.length > storeId, "Store does not exist");
+        require(stores.length > storeId, "StorePool: Store does not exist");
         return storeToOwner[storeId] == msg.sender;
     }
     
@@ -94,8 +94,8 @@ contract StorePool is StorePool_Ownable {
 
 
     modifier onlyStoreOwner(uint256 storeId) {
-        require(stores.length > storeId, "Store does not exist");
-        require(storeToOwner[storeId] == msg.sender, "Caller is not the owner");
+        require(stores.length > storeId, "StorePool: Store does not exist");
+        require(storeToOwner[storeId] == msg.sender, "StorePool: Caller is not the owner");
         _;
     }
 }
