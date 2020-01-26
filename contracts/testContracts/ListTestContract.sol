@@ -20,6 +20,12 @@ contract ListTestContract {
     function add(uint256 data) public {
         list.add(ListTest.TestItem(data));
     }
+    
+    function addSeveralElements(uint256 startData, uint256 numOfElements) public {
+        for(uint256 i = 0; i < numOfElements; ++i) {
+            list.add(ListTest.TestItem(startData++));
+        }
+    }
 
     function get(uint256 index) public view returns (uint256) {
         return list.get(index).data;
@@ -51,5 +57,9 @@ contract ListTestContract {
         }
         
         return result;
+    }
+    
+    function getLastId() public view returns(uint256) {
+        return list.lastId;
     }
 }

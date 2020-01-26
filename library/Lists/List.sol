@@ -17,6 +17,7 @@ library List {
     
     struct List {
         uint256 rootId;
+        uint256 lastId;
         uint256 length;
         uint256 freeIndexesLength;
         uint256 nextWrapperId;
@@ -26,7 +27,7 @@ library List {
     }
     
     function createList() internal pure returns(List memory) {
-        return List(0, 0, 0, 1);
+        return List(0, 0, 0, 0, 1);
     }
     
     
@@ -81,33 +82,20 @@ library List {
     }
 
     function last(List storage list) internal view returns(TestItem storage) {
-        require(list.length > 0, "List does not have elements");
-
-        uint256 lastItemId = list.rootId;
-        for (uint256 i = 1; i < list.length; i = SafeMath.add(i, 1)){
-            lastItemId = list.wrappers[lastItemId].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
-        }
-        
-        return list.wrappers[lastItemId].item;
+        require(list.lastId != 0, "List does not have elements");
+        return list.wrappers[list.lastId].item;
     }
     
     function add(List storage list, TestItem memory item) internal {
+        uint256 newItemId = addToInternalArray(list, item);
         if (!rootExist(list)) {
-            list.rootId = addToInternalArray(list, item);
+            list.rootId = newItemId;
         }
         else {
-            uint256 currentItemId = list.rootId;
-            for (uint256 i = 1; i < list.length; i = SafeMath.add(i, 1)){
-                currentItemId = list.wrappers[currentItemId].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
-            }
-            
-            uint256 newItemId = addToInternalArray(list, item);
-            ItemWrapper storage currentItem = list.wrappers[currentItemId];
-            
-            currentItem.nearbyWrappers[true] = newItemId;
-            setNearbys(list.wrappers[newItemId], currentItemId, 0);
+            list.wrappers[list.lastId].nearbyWrappers[true] = newItemId;
+            setNearbys(list.wrappers[newItemId], list.lastId, 0);
         }
-        
+        list.lastId = newItemId;
         list.length = SafeMath.add(list.length, 1);
     }
     
@@ -147,14 +135,15 @@ library List {
         for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)){
             itemIdToRemove = list.wrappers[itemIdToRemove].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
         }
-        ItemWrapper storage itemToRemove = list.wrappers[itemIdToRemove];
+        uint256 nextId = list.wrappers[itemIdToRemove].nearbyWrappers[true];
+        uint256 prevId = list.wrappers[itemIdToRemove].nearbyWrappers[false];
         
-        if (index == 0) {
-            list.rootId = itemToRemove.nearbyWrappers[true];
-        }
+        if (index == list.length - 1) list.lastId = prevId;
+        
+        if (index == 0) list.rootId = nextId;
         else {
-            ItemWrapper storage prevItem = list.wrappers[itemToRemove.nearbyWrappers[false]];
-            prevItem.nearbyWrappers[true] = itemToRemove.nearbyWrappers[true];
+            list.wrappers[prevId].nearbyWrappers[true] = nextId;
+            if(nextId != 0) list.wrappers[nextId].nearbyWrappers[false] = prevId;
         }
 
         list.freeIndexes[list.freeIndexesLength] = itemIdToRemove;
