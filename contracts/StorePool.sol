@@ -1,13 +1,13 @@
-pragma solidity >=0.5.0;
+pragma solidity >=0.6.0;
 
 import "../node_modules/OpenZeppelin/contracts/math/SafeMath.sol";
-import "./Ownable.sol";
+import "../node_modules/OpenZeppelin/contracts/ownership/Ownable.sol";
 
 /**
  * @author LordOfTheBees
  * @notice Workplace with Store
  */
-contract StorePool is StorePool_Ownable {
+contract StorePool is Ownable {
     using SafeMath for uint256;
 
     event StoreCreated(uint256 indexed storeId);
