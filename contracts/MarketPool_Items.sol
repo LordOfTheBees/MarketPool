@@ -1,7 +1,7 @@
 pragma solidity >=0.6.0;
 
 
-import "../node_modules/OpenZeppelin/contracts/drafts/Counters.sol";
+import "@openzeppelin/contracts/drafts/Counters.sol";
 import "../library/Items.sol";
 import "./MarketPool.sol";
 

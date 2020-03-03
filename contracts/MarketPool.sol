@@ -1,7 +1,7 @@
 pragma solidity >=0.6.0;
 
-import "../node_modules/OpenZeppelin/contracts/math/SafeMath.sol";
-import "../node_modules/OpenZeppelin/contracts/ownership/Ownable.sol";
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/ownership/Ownable.sol';
 
 /**
  * @author LordOfTheBees

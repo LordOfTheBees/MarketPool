@@ -1,6 +1,6 @@
 pragma solidity >=0.6.0;
 
-import "../node_modules/OpenZeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * @title Counters

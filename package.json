@@ -1,0 +1,22 @@
+{
+  "name": "MarketPool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "install": "0.13.0",
+    "npm": "6.14.1"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "3.0.0-beta.0"
+  }
+}
