@@ -38,6 +38,15 @@ contract MarketPool is Ownable {
     }
 
     /**
+     * @notice Return all data of market by its id
+     */
+    function getMarketData(uint256 marketId) public view returns (string memory name) {
+        require(marketExist(marketId), "MarketPool: Market does not exist");
+        Market storage marketData = markets[marketId];
+        return (marketData.name);
+    }
+
+    /**
      * @notice Renouncing ownership will leave the contract without an market owner, thereby removing any functionality that is only available to the market owner (e.g. creating new Item Types).
      */
     function renounceMarketOwnership(uint256 marketId) public onlyMarketOwner(marketId) {
@@ -51,16 +60,6 @@ contract MarketPool is Ownable {
     function transferMarketOwnership(uint256 marketId, address newOwner) public onlyMarketOwner(marketId) notZeroAddress(newOwner) {
         emit MarketOwnershipTransferred(marketId, marketToOwner[marketId], newOwner);
         marketToOwner[marketId] = newOwner;
-    }
-    
-    
-    /**
-     * @notice Return all data of market by its id
-     */
-    function getMarketData(uint256 marketId) public view returns (string memory name) {
-        require(marketExist(marketId), "MarketPool: Market does not exist");
-        Market storage marketData = markets[marketId];
-        return (marketData.name);
     }
     
     /**
