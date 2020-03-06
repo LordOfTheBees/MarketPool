@@ -1,69 +1,49 @@
 const MarketPool = artifacts.require("./MarketPool.sol");
-const truffleAssert = require('truffle-assertions');
 
-const zeroAccount = '0x0000000000000000000000000000000000000000';
+const truffleAssert = require('truffle-assertions');
+const testHelper = require("../jsmoduls/test-helper.js");
 
 contract("MarketPool Common Test", accounts => {
+    let marketName = "marketName";
+
     it("Market creation test. Market Exist test", async () => {
-        let marketName = "marketName";
+        
         let creationAccount = accounts[1];
-        let marketId;
         let instance = await MarketPool.deployed();
 
-        let result = await instance.createMarket(marketName, {from: creationAccount});
-        await truffleAssert.eventEmitted(result , 'MarketCreated', async (res) => {
-            marketId = res.marketId.toNumber();
-        });
-
-        assert.isOk(await instance.marketExist(marketId), "Market does not exist after creation");
+        let responseCreateMarket = await testHelper.createMarket(instance, {name : marketName}, creationAccount);
+        assert.isOk(await instance.marketExist(responseCreateMarket.marketId), "Market does not exist after creation");
     });
 
     it("Get Market Data", async () => {
-        let marketName = "marketName";
         let creationAccount = accounts[1];
-        let marketId;
         let instance = await MarketPool.deployed();
 
-        let result = await instance.createMarket(marketName, {from: creationAccount});
-        await truffleAssert.eventEmitted(result , 'MarketCreated', async (res) => {
-            marketId = res.marketId.toNumber();
-        });
-
+        let responseCreateMarket = await testHelper.createMarket(instance, {name : marketName}, creationAccount);
+        let marketId = responseCreateMarket.marketId;
         let storedName= await instance.getMarketData.call(marketId);
 
         assert.equal(storedName, marketName, "Name in contract incorrect");
     });
 
     it("Transfer Market Ownership", async () => {
-        let marketName = "marketName";
         let creationAccount = accounts[1];
         let newOwnerAccount = accounts[2];
         let notOwnerAccount = accounts[3];
-        let marketId;
         let instance = await MarketPool.deployed();
 
-        let result = await instance.createMarket(marketName, {from: creationAccount});
-        await truffleAssert.eventEmitted(result , 'MarketCreated', async (res) => {
-            marketId = res.marketId.toNumber();
-        });
+        let responseCreateMarket = await testHelper.createMarket(instance, {name : marketName}, creationAccount);
+        let marketId = responseCreateMarket.marketId;
 
-        let withoutError = true;
-        try {
-            await instance.transferMarketOwnership(marketId, '0x0000000000000000000000000000000000000000', {from: creationAccount});
-        }
-        catch (exception) {
-            withoutError = false;
-        }
-        if(withoutError) throw "Transfer passed without errors with ZERO address"
+        await testHelper.testError(
+            async () => await instance.transferMarketOwnership(marketId, testHelper.zeroAddress, {from: creationAccount}),
+            "Transfer passed without errors with ZERO address"
+        )
 
-        withoutError = true;
-        try {
-            await instance.transferMarketOwnership(marketId, newOwnerAccount, {from: notOwnerAccount});
-        }
-        catch (exception) {
-            withoutError = false;
-        }
-        if(withoutError) throw "Transfer was successful through the not owner address"
+        await testHelper.testError(
+            async () => await instance.transferMarketOwnership(marketId, newOwnerAccount, {from: notOwnerAccount}),
+            "Transfer was successful through the not owner address"
+        )
 
         await instance.transferMarketOwnership(marketId, newOwnerAccount, {from: creationAccount});
         let newOwner = await instance.getMarketOwner.call(marketId);
@@ -75,54 +55,35 @@ contract("MarketPool Common Test", accounts => {
     });
 
     it("Renounce Market Ownership", async () => {
-        let marketName = "marketName";
         let creationAccount = accounts[1];
         let notOwnerAccount = accounts[3];
-        let marketId;
         let instance = await MarketPool.deployed();
 
-        let result = await instance.createMarket(marketName, {from: creationAccount});
-        await truffleAssert.eventEmitted(result , 'MarketCreated', async (res) => {
-            marketId = res.marketId.toNumber();
-        });
+        let responseCreateMarket = await testHelper.createMarket(instance, {name : marketName}, creationAccount);
+        let marketId = responseCreateMarket.marketId;
 
-
-        withoutError = true;
-        try {
-            await instance.renounceMarketOwnership(marketId, {from: notOwnerAccount});
-        }
-        catch (exception) {
-            withoutError = false;
-        }
-        if(withoutError) throw "Renounce was successful through the not owner address"
-
+        await testHelper.testError(
+            async () => await instance.renounceMarketOwnership(marketId, {from: notOwnerAccount}),
+            "Renounce was successful through the not owner address");
 
         await instance.renounceMarketOwnership(marketId, {from: creationAccount});
         let newOwner = await instance.getMarketOwner.call(marketId);
         assert.equal(newOwner, '0x0000000000000000000000000000000000000000', "Transfer to newOwnerAccount failed");
 
-
-        withoutError = true;
-        try {
-            await instance.transferMarketOwnership(marketId, newOwnerAccount, {from: creationAccount});
-        }
-        catch (exception) {
-            withoutError = false;
-        }
-        if(withoutError) throw "Transfer was successful after renounce"
+        
+        await testHelper.testError(
+            async () => await instance.transferMarketOwnership(marketId, newOwnerAccount, {from: creationAccount}),
+            "Transfer was successful after renounce");
     });
 
     it("Get Market Owner", async () => {
-        let marketName = "marketName";
         let creationAccount = accounts[1];
         let newOwnerAccount = accounts[2];
-        let marketId;
         let instance = await MarketPool.deployed();
 
-        let result = await instance.createMarket(marketName, {from: creationAccount});
-        await truffleAssert.eventEmitted(result , 'MarketCreated', async (res) => {
-            marketId = res.marketId.toNumber();
-        });
+        let responseCreateMarket = await testHelper.createMarket(instance, {name : marketName}, creationAccount);
+        let marketId = responseCreateMarket.marketId;
+
         let owner = await instance.getMarketOwner.call(marketId);
         assert.equal(owner, creationAccount, "Initial owner not creationAccount");
 
@@ -134,20 +95,17 @@ contract("MarketPool Common Test", accounts => {
 
         await instance.renounceMarketOwnership(marketId, {from: newOwnerAccount});
         owner = await instance.getMarketOwner.call(marketId);
-        assert.equal(owner, zeroAccount, "After renounce owner not equal zero");
+        assert.equal(owner, testHelper.zeroAddress, "After renounce owner not equal zero");
     });
 
     it("Is Market Owner", async () => {
-        let marketName = "marketName";
         let creationAccount = accounts[1];
         let newOwnerAccount = accounts[2];
-        let marketId;
         let instance = await MarketPool.deployed();
 
-        let result = await instance.createMarket(marketName, {from: creationAccount});
-        await truffleAssert.eventEmitted(result , 'MarketCreated', async (res) => {
-            marketId = res.marketId.toNumber();
-        });
+        let responseCreateMarket = await testHelper.createMarket(instance, {name : marketName}, creationAccount);
+        let marketId = responseCreateMarket.marketId;
+
         assert.isOk(await instance.isMarketOwner.call(marketId, {from: creationAccount}), "Initial owner not creationAccount");
 
 

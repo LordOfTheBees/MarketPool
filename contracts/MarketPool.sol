@@ -87,13 +87,13 @@ contract MarketPool is Ownable {
 
 
     modifier notZeroAddress(address checkAddress) {
-        require(checkAddress != address(0), "MarketPool: CheckAddress is the zero address");
+        require(checkAddress != address(0), "CheckAddress is the zero address");
         _;
     }
 
     modifier onlyMarketOwner(uint256 marketId) {
-        require(marketExist(marketId), "MarketPool: Market does not exist");
-        require(marketToOwner[marketId] == msg.sender, "MarketPool: Caller is not the owner");
+        require(marketExist(marketId), "Market does not exist");
+        require(marketToOwner[marketId] == msg.sender, "Caller is not the owner");
         _;
     }
 }

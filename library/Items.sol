@@ -26,9 +26,6 @@ library Items {
         uint256 remainingSuply;
         uint256 totalSuply;
 
-        // Конечное ли количество элементов данного типа
-        bool isFinal;
-
         bool allowSale;
         bool allowAuction;
         bool allowRent;
@@ -36,15 +33,22 @@ library Items {
     }
 
     /**
-     * @dev Checks whether the items to create them have run out
-     * @return true if items is over
+     * @dev Checks whether it is possible to create an item
+     * @return true if it possible
      */
-    function itemsOver(ItemType storage itemType) internal view returns (bool) {
-        return itemType.isFinal && itemType.remainingSuply == 0;
+    function creatingPossible(ItemType storage itemType) internal view returns (bool) {
+        return itemType.totalSuply == 0 || itemType.remainingSuply > 0;
+    }
+
+    /**
+     * @return true if Number of items is limited
+     */
+    function isFinalType(ItemType storage itemType) internal view returns (bool) {
+        return itemType.totalSuply > 0;
     }
     
     function recordItemCreated(ItemType storage itemType) internal {
-        if (itemType.isFinal)
+        if (isFinalType(itemType))
             itemType.remainingSuply = SafeMath.sub(itemType.remainingSuply, 1);
     }
     
