@@ -23,9 +23,10 @@ library Items {
     struct ItemType {
         string name;
 
-        uint256 remainingSuply;
-        uint256 totalSuply;
+        uint256 remainingSupply;
+        uint256 totalSupply;
 
+        bool isFinal;
         bool allowSale;
         bool allowAuction;
         bool allowRent;
@@ -37,19 +38,15 @@ library Items {
      * @return true if it possible
      */
     function creatingPossible(ItemType storage itemType) internal view returns (bool) {
-        return itemType.totalSuply == 0 || itemType.remainingSuply > 0;
-    }
-
-    /**
-     * @return true if Number of items is limited
-     */
-    function isFinalType(ItemType storage itemType) internal view returns (bool) {
-        return itemType.totalSuply > 0;
+        return !itemType.isFinal || itemType.remainingSupply > 0;
     }
     
+    /**
+     * @dev reduces the number of remaining objects by 1 if it Final
+     */
     function recordItemCreated(ItemType storage itemType) internal {
-        if (isFinalType(itemType))
-            itemType.remainingSuply = SafeMath.sub(itemType.remainingSuply, 1);
+        if (itemType.isFinal && itemType.remainingSupply > 0)
+            itemType.remainingSupply = SafeMath.sub(itemType.remainingSupply, 1);
     }
     
 }

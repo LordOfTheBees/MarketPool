@@ -42,7 +42,7 @@ contract MarketPool_Items is MarketPool {
     function createItemType(
         uint256 marketId,
         string calldata name,
-        uint256 totalSuply,
+        uint256 totalSupply,
         bool allowSale,
         bool allowAuction,
         bool allowRent,
@@ -51,8 +51,9 @@ contract MarketPool_Items is MarketPool {
         marketToItemTypes[marketId].push(
             Items.ItemType(
                 name,
-                totalSuply,
-                totalSuply,
+                totalSupply,
+                totalSupply,
+                totalSupply > 0,
                 allowSale,
                 allowAuction,
                 allowRent,
@@ -103,8 +104,9 @@ contract MarketPool_Items is MarketPool {
         onlyItemTypeExist(marketId, typeId)
         returns (
             string memory name,
-            uint256 remainingSuply,
-            uint256 totalSuply,
+            uint256 remainingSupply,
+            uint256 totalSupply,
+            bool isFinal,
             bool allowSale,
             bool allowAuction,
             bool allowRent,
@@ -114,8 +116,9 @@ contract MarketPool_Items is MarketPool {
         Items.ItemType memory itemType = marketToItemTypes[marketId][typeId];
         return (
             itemType.name,
-            itemType.remainingSuply,
-            itemType.totalSuply,
+            itemType.remainingSupply,
+            itemType.totalSupply,
+            itemType.isFinal,
             itemType.allowSale,
             itemType.allowAuction,
             itemType.allowRent,

@@ -13,7 +13,7 @@ contract("MarketPool_Items Common Test", async accounts => {
     var commonDataToCreateItemType = {
         marketId        :   0,
         name            :   "Common Test Type",
-        totalSuply      :   99999999,
+        totalSupply      :   99999999,
         allowSale       :   true,
         allowAuction    :   true,
         allowRent       :   true,
@@ -37,7 +37,7 @@ contract("MarketPool_Items Common Test", async accounts => {
         let dataToCreateItemType = {
             marketId        :   marketId,
             name            :   "Test Type",
-            totalSuply      :   0,
+            totalSupply      :   0,
             allowSale       :   false,
             allowAuction    :   true,
             allowRent       :   false,
@@ -58,7 +58,7 @@ contract("MarketPool_Items Common Test", async accounts => {
         let dataToCreateItemType = {
             marketId        :   -1,
             name            :   "Test Type",
-            totalSuply      :   0,
+            totalSupply      :   0,
             allowSale       :   false,
             allowAuction    :   true,
             allowRent       :   false,
@@ -79,7 +79,7 @@ contract("MarketPool_Items Common Test", async accounts => {
         let dataToCreateItemType = {
             marketId        :   marketId,
             name            :   "Test Type",
-            totalSuply      :   99999999,
+            totalSupply      :   99999999,
             allowSale       :   true,
             allowAuction    :   false,
             allowRent       :   true,
@@ -91,9 +91,10 @@ contract("MarketPool_Items Common Test", async accounts => {
         let itemTypeData = responseCreateItemType.savedData;
 
         assert.equal(responseGetData.name, itemTypeData.name, "Incorrect saved type name");
-        assert.equal(responseGetData.totalSuply.toNumber(), itemTypeData.remainingSuply.toNumber(), 
-            "Incorrect saved remainingSuply");
-        assert.equal(responseGetData.totalSuply.toNumber(), itemTypeData.totalSuply.toNumber(), "Incorrect saved totalSuply");
+        assert.equal(responseGetData.totalSupply.toNumber(), itemTypeData.remainingSupply.toNumber(), 
+            "Incorrect saved remainingSupply");
+        assert.equal(responseGetData.totalSupply.toNumber(), itemTypeData.totalSupply.toNumber(), "Incorrect saved totalSuply");
+        assert.equal(dataToCreateItemType.totalSupply > 0, itemTypeData.isFinal, "Incorrect isFinal calculated");
         assert.equal(responseGetData.allowSale, itemTypeData.allowSale, "Incorrect saved allowSale");
         assert.equal(responseGetData.allowAuction, itemTypeData.allowAuction, "Incorrect saved allowAuction");
         assert.equal(responseGetData.allowRent, itemTypeData.allowRent, "Incorrect saved allowRent");
@@ -174,11 +175,11 @@ contract("MarketPool_Items Common Test", async accounts => {
             "Get Item Data was successfuly with not existing market and ItemType and not from owner");
     });
 
-    it("Check Suply", async () => {
+    it("Check Supply", async () => {
         let dataToCreateItemType = {
             marketId        :   marketId,
             name            :   "Test Type",
-            totalSuply      :   10,
+            totalSupply      :   10,
             allowSale       :   true,
             allowAuction    :   false,
             allowRent       :   true,
@@ -432,9 +433,10 @@ contract("MarketPool_Items Common Test", async accounts => {
  */
 function checkItemTypeData (localDataStruct, contractDataStruct){
     assert.equal(localDataStruct.name, contractDataStruct.name, "Incorrect saved type name");
-    assert.equal(localDataStruct.totalSuply, contractDataStruct.remainingSuply.toNumber(), 
-        "Incorrect saved remainingSuply");
-    assert.equal(localDataStruct.totalSuply, contractDataStruct.totalSuply.toNumber(), "Incorrect saved totalSuply");
+    assert.equal(localDataStruct.totalSupply, contractDataStruct.remainingSupply.toNumber(), 
+        "Incorrect saved remainingSupply");
+    assert.equal(localDataStruct.totalSupply, contractDataStruct.totalSupply.toNumber(), "Incorrect saved totalSuply");
+    assert.equal(localDataStruct.totalSupply > 0, contractDataStruct.isFinal, "Incorrect isFinal calculated");
     assert.equal(localDataStruct.allowSale, contractDataStruct.allowSale, "Incorrect saved allowSale");
     assert.equal(localDataStruct.allowAuction, contractDataStruct.allowAuction, "Incorrect saved allowAuction");
     assert.equal(localDataStruct.allowRent, contractDataStruct.allowRent, "Incorrect saved allowRent");

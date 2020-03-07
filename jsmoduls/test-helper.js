@@ -45,7 +45,7 @@ async function createMarket(instance, data, from) {
 /**
  * Creating new item type
  * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, name:string, totalSuply:number, allowSale:boolean, allowAuction:boolean, allowRent:boolean, allowLootbox:boolean}} data data for creating item type
+ * @param {{marketId:number, name:string, totalSupply:number, allowSale:boolean, allowAuction:boolean, allowRent:boolean, allowLootbox:boolean}} data data for creating item type
  * @param {address} from account which call this transaction
  * @returns {{marketId:number, typeId:number, savedData:struct}}
  */
@@ -57,7 +57,7 @@ async function createItemType(instance, data, from){
     let result = await instance.createItemType(
         data.marketId, 
         data.name, 
-        data.totalSuply,
+        data.totalSupply,
         data.allowSale, 
         data.allowAuction, 
         data.allowRent, 
