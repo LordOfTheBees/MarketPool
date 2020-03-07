@@ -60,10 +60,7 @@ contract MarketPool_Items is MarketPool {
                 allowLootbox
             )
         );
-        uint256 itemTypeId = SafeMath.sub(
-            marketToItemTypes[marketId].length,
-            1
-        );
+        uint256 itemTypeId = marketToItemTypes[marketId].length.sub(1);
         emit ItemTypeCreated(marketId, itemTypeId);
         return itemTypeId;
     }
@@ -223,7 +220,7 @@ contract MarketPool_Items is MarketPool {
         );
 
         marketToItems[marketId].push(Items.Item(typeId));
-        uint256 itemId = SafeMath.sub(marketToItems[marketId].length, 1);
+        uint256 itemId = marketToItems[marketId].length.sub(1);
         marketToUsersToItemsCount[marketId][newItemOwner].increment();
         marketToItemToOwner[marketId][itemId] = newItemOwner;
 

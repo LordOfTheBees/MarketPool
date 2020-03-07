@@ -31,7 +31,7 @@ contract MarketPool is Ownable {
      */
     function createMarket(string memory name) public returns (uint256) {
         markets.push(Market(name));
-        uint256 id = SafeMath.sub(markets.length, 1);
+        uint256 id = markets.length.sub(1);
         marketToOwner[id] = msg.sender;
         emit MarketCreated(id);
         return id;

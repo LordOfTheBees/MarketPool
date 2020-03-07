@@ -1,16 +1,14 @@
 pragma solidity >=0.6.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./SaleItem.sol";
 
-library List {
+library SaleItemList {
     using SafeMath for uint256;
-
-    struct Uniq_Item_Name_For_Replacing {
-        string data;
-    }
+    using SaleItem for SaleItem.Data;
 
     struct ItemWrapper {
-        Uniq_Item_Name_For_Replacing item;
+        SaleItem.Data item;
         mapping(bool => uint256) nearbyWrappers; //false - previous item, true - next item
     }
 
@@ -72,12 +70,12 @@ library List {
     function get(List storage list, uint256 index)
         public
         view
-        returns (Uniq_Item_Name_For_Replacing storage)
+        returns (SaleItem.Data storage)
     {
         require(index < list.length, "Out of range exception");
 
         uint256 currentItemId = list.rootId;
-        for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
+        for (uint256 i = 1; i <= index; i = i.add(1)) {
             currentItemId = list.wrappers[currentItemId].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
         }
 
@@ -91,7 +89,7 @@ library List {
     function getByInnerIndex(List storage list, uint256 index)
         public
         view
-        returns (Uniq_Item_Name_For_Replacing storage)
+        returns (SaleItem.Data storage)
     {
         return list.wrappers[index].item;
     }
@@ -100,7 +98,7 @@ library List {
      * @dev Return Last added item. O(1).
      * @return (Item storage)
      */
-    function last(List storage list) public view returns (Uniq_Item_Name_For_Replacing storage) {
+    function last(List storage list) public view returns (SaleItem.Data storage) {
         require(list.lastId != 0, "List does not have elements");
         return list.wrappers[list.lastId].item;
     }
@@ -111,7 +109,7 @@ library List {
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
      * @return (normalIndex: uint256; innerIndex: uint256)
      */
-    function add(List storage list, Uniq_Item_Name_For_Replacing memory item)
+    function add(List storage list, SaleItem.Data memory item)
         internal
         returns (uint256 normalIndex, uint256 innerIndex)
     {
@@ -124,7 +122,7 @@ library List {
         }
         uint256 normalId = list.length;
         list.lastId = newItemId;
-        list.length = SafeMath.add(list.length, 1);
+        list.length = list.length.add(1);
 
         return (normalId, list.lastId);
     }
@@ -135,7 +133,7 @@ library List {
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
      * @return (innerIndex: uint256)
      */
-    function insert(List storage list, Uniq_Item_Name_For_Replacing memory item, uint256 index)
+    function insert(List storage list, SaleItem.Data memory item, uint256 index)
         internal
         returns (uint256)
     {
@@ -150,7 +148,7 @@ library List {
             list.rootId = newItemId;
         } else {
             uint256 currentItemId = list.rootId;
-            for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
+            for (uint256 i = 1; i <= index; i = i.add(1)) {
                 currentItemId = list.wrappers[currentItemId]
                     .nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
             }
@@ -169,7 +167,7 @@ library List {
             );
         }
 
-        list.length = SafeMath.add(list.length, 1);
+        list.length = list.length.add(1);
         return newItemId;
     }
 
@@ -182,7 +180,7 @@ library List {
         require(index < list.length, "Out of range exception");
 
         uint256 itemIdToRemove = list.rootId;
-        for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
+        for (uint256 i = 1; i <= index; i = i.add(1)) {
             itemIdToRemove = list.wrappers[itemIdToRemove].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
         }
         uint256 nextId = list.wrappers[itemIdToRemove].nearbyWrappers[true];
@@ -198,9 +196,9 @@ library List {
         }
 
         list.freeIndexes[list.freeIndexesLength] = itemIdToRemove;
-        list.freeIndexesLength = SafeMath.add(list.freeIndexesLength, 1);
+        list.freeIndexesLength = list.freeIndexesLength.add(1);
 
-        list.length = SafeMath.sub(list.length, 1);
+        list.length = list.length.sub(1);
     }
 
     /**
@@ -222,9 +220,9 @@ library List {
         }
 
         list.freeIndexes[list.freeIndexesLength] = innerIndex;
-        list.freeIndexesLength = SafeMath.add(list.freeIndexesLength, 1);
+        list.freeIndexesLength = list.freeIndexesLength.add(1);
 
-        list.length = SafeMath.sub(list.length, 1);
+        list.length = list.length.sub(1);
     }
 
     /**
@@ -234,15 +232,15 @@ library List {
     function toArray(List storage list)
         public
         view
-        returns (Uniq_Item_Name_For_Replacing[] memory)
+        returns (SaleItem.Data[] memory)
     {
-        Uniq_Item_Name_For_Replacing[] memory itemsArray = new Uniq_Item_Name_For_Replacing[](list.length);
+        SaleItem.Data[] memory itemsArray = new SaleItem.Data[](list.length);
         if (!rootExist(list)) return itemsArray;
 
         uint256 currentItemId = list.rootId;
         itemsArray[0] = list.wrappers[currentItemId].item;
 
-        for (uint256 i = 1; i < list.length; i = SafeMath.add(i, 1)) {
+        for (uint256 i = 1; i < list.length; i = i.add(1)) {
             currentItemId = list.wrappers[currentItemId].nearbyWrappers[true];
             itemsArray[i] = list.wrappers[currentItemId].item;
         }
@@ -281,20 +279,20 @@ library List {
         return list.rootId > 0;
     }
 
-    function addToInternalArray(List storage list, Uniq_Item_Name_For_Replacing memory item)
+    function addToInternalArray(List storage list, SaleItem.Data memory item)
         private
         returns (uint256)
     {
         uint256 itemId = 0;
         if (list.freeIndexesLength > 0) {
             itemId = list.freeIndexes[list.freeIndexesLength - 1];
-            list.freeIndexesLength = SafeMath.sub(list.freeIndexesLength, 1);
+            list.freeIndexesLength = list.freeIndexesLength.sub(1);
 
             list.wrappers[itemId] = ItemWrapper(item);
         } else {
             //require(list.manager.listToNextWrapperId[list.id] == 1, "next index is zero!!!");
             itemId = list.nextWrapperId;
-            list.nextWrapperId = SafeMath.add(list.nextWrapperId, 1);
+            list.nextWrapperId = list.nextWrapperId.add(1);
             list.wrappers[itemId] = ItemWrapper(item);
         }
 
