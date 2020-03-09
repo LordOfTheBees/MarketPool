@@ -1,24 +1,27 @@
 pragma solidity >=0.6.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./SaleItem.sol";
+import "@openzeppelin/contracts/drafts/Counters.sol";
+import "./Sale.sol";
 
-library SaleItemList {
+library SaleDataList {
     using SafeMath for uint256;
-    using SaleItem for SaleItem.Data;
+    using Sale for Sale.Data;
+    using Counters for Counters.Counter;
 
     struct ItemWrapper {
-        SaleItem.Data item;
+        Sale.Data item;
         mapping(bool => uint256) nearbyWrappers; //false - previous item, true - next item
     }
 
     struct List {
         uint256 rootId;
         uint256 lastId;
-        uint256 length;
 
         uint256 freeIndexesLength;
         uint256 nextWrapperId;
+
+        Counters.Counter length;
 
         mapping(uint256 => uint256) freeIndexes;
         mapping(uint256 => ItemWrapper) wrappers;
@@ -26,18 +29,18 @@ library SaleItemList {
 
     /**
      * @dev Creating new List
-     * @return (List)
+     * @return List
      */
     function newList() internal pure returns (List memory) {
-        return List(0, 0, 0, 0, 1);
+        return List(0, 0, 0, 1, Counters.Counter(0));
     }
 
     /**
      * @dev Return current List length
-     * @return (uin256)
+     * @return uin256
      */
     function length(List storage list) public view returns (uint256) {
-        return list.length;
+        return list.length.current();
     }
 
     /**
@@ -46,15 +49,15 @@ library SaleItemList {
      * When loop finished, function returns zero inner index (this index does not using for items).
      * If you want get Item, call the function {getByInnerIndex}
      * Example:
-     uint256 innerIndex = list.next(0);
+     uint256 innerIndex = list.iterate(0);
      while(innerIndex != 0) {
          Item storage item = list.getByInnerIndex(innerIndex);
          //working with item
-         innerIndex = list.next(innerIndex);
+         innerIndex = list.iterate(innerIndex);
      }
-     * @return (innerIndex:uin256)
+     * @return innerIndex returned
      */
-    function next(List storage list, uint256 currentInnerIndex)
+    function iterate(List storage list, uint256 currentInnerIndex)
         public
         view
         returns (uint256)
@@ -70,9 +73,9 @@ library SaleItemList {
     function get(List storage list, uint256 index)
         public
         view
-        returns (SaleItem.Data storage)
+        returns (Sale.Data storage)
     {
-        require(index < list.length, "Out of range exception");
+        require(index < list.length.current(), "Out of range exception");
 
         uint256 currentItemId = list.rootId;
         for (uint256 i = 1; i <= index; i = i.add(1)) {
@@ -84,21 +87,21 @@ library SaleItemList {
 
     /**
      * @dev Return item by inner index. O(1).
-     * @return (Item storage)
+     * @return Item storage
      */
     function getByInnerIndex(List storage list, uint256 index)
         public
         view
-        returns (SaleItem.Data storage)
+        returns (Sale.Data storage)
     {
         return list.wrappers[index].item;
     }
 
     /**
      * @dev Return Last added item. O(1).
-     * @return (Item storage)
+     * @return Item storage
      */
-    function last(List storage list) public view returns (SaleItem.Data storage) {
+    function last(List storage list) public view returns (Sale.Data storage) {
         require(list.lastId != 0, "List does not have elements");
         return list.wrappers[list.lastId].item;
     }
@@ -107,9 +110,9 @@ library SaleItemList {
      * @dev Add new item to list's end. O(1).
      * If you want change item's data, call {get} or {getByInnerIndex}, they returns stored items in this list.
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
-     * @return (normalIndex: uint256; innerIndex: uint256)
+     * @return normalIndex and innerIndex
      */
-    function add(List storage list, SaleItem.Data memory item)
+    function add(List storage list, Sale.Data memory item)
         internal
         returns (uint256 normalIndex, uint256 innerIndex)
     {
@@ -120,24 +123,24 @@ library SaleItemList {
             list.wrappers[list.lastId].nearbyWrappers[true] = newItemId;
             setNearbys(list.wrappers[newItemId], list.lastId, 0);
         }
-        uint256 normalId = list.length;
+        uint256 normalId = list.length.current();
         list.lastId = newItemId;
-        list.length = list.length.add(1);
+        list.length.increment();
 
-        return (normalId, list.lastId);
+        return (normalId, newItemId);
     }
 
     /**
      * @dev Insert new item by index. O(n)
      * If you want change item's data, call {get} or {getByInnerIndex}, they returns stored items in this list.
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
-     * @return (innerIndex: uint256)
+     * @return innerIndex returned
      */
-    function insert(List storage list, SaleItem.Data memory item, uint256 index)
+    function insert(List storage list, Sale.Data memory item, uint256 index)
         internal
         returns (uint256)
     {
-        require(index < list.length, "Out of range exception");
+        require(index < list.length.current(), "Out of range exception");
 
         uint256 newItemId = addToInternalArray(list, item);
         if (index == 0) {
@@ -167,7 +170,7 @@ library SaleItemList {
             );
         }
 
-        list.length = list.length.add(1);
+        list.length.increment();
         return newItemId;
     }
 
@@ -177,7 +180,7 @@ library SaleItemList {
     function removeByNormalId(List storage list, uint256 index)
         internal
     {
-        require(index < list.length, "Out of range exception");
+        require(index < list.length.current(), "Out of range exception");
 
         uint256 itemIdToRemove = list.rootId;
         for (uint256 i = 1; i <= index; i = i.add(1)) {
@@ -186,7 +189,7 @@ library SaleItemList {
         uint256 nextId = list.wrappers[itemIdToRemove].nearbyWrappers[true];
         uint256 prevId = list.wrappers[itemIdToRemove].nearbyWrappers[false];
 
-        if (index == list.length - 1) list.lastId = prevId;
+        if (index == list.length.current() - 1) list.lastId = prevId;
 
         if (index == 0) list.rootId = nextId;
         else {
@@ -198,7 +201,7 @@ library SaleItemList {
         list.freeIndexes[list.freeIndexesLength] = itemIdToRemove;
         list.freeIndexesLength = list.freeIndexesLength.add(1);
 
-        list.length = list.length.sub(1);
+        list.length.decrement();
     }
 
     /**
@@ -210,7 +213,7 @@ library SaleItemList {
         uint256 nextId = list.wrappers[innerIndex].nearbyWrappers[true];
         uint256 prevId = list.wrappers[innerIndex].nearbyWrappers[false];
 
-        if (innerIndex == list.length - 1) list.lastId = prevId;
+        if (innerIndex == list.length.current() - 1) list.lastId = prevId;
 
         if (innerIndex == 0) list.rootId = nextId;
         else {
@@ -222,7 +225,7 @@ library SaleItemList {
         list.freeIndexes[list.freeIndexesLength] = innerIndex;
         list.freeIndexesLength = list.freeIndexesLength.add(1);
 
-        list.length = list.length.sub(1);
+        list.length.decrement();
     }
 
     /**
@@ -230,17 +233,17 @@ library SaleItemList {
      * @return Item[] memory
      */
     function toArray(List storage list)
-        public
+        internal
         view
-        returns (SaleItem.Data[] memory)
+        returns (Sale.Data[] memory)
     {
-        SaleItem.Data[] memory itemsArray = new SaleItem.Data[](list.length);
+        Sale.Data[] memory itemsArray = new Sale.Data[](list.length.current());
         if (!rootExist(list)) return itemsArray;
 
         uint256 currentItemId = list.rootId;
         itemsArray[0] = list.wrappers[currentItemId].item;
 
-        for (uint256 i = 1; i < list.length; i = i.add(1)) {
+        for (uint256 i = 1; i < list.length.current(); i = i.add(1)) {
             currentItemId = list.wrappers[currentItemId].nearbyWrappers[true];
             itemsArray[i] = list.wrappers[currentItemId].item;
         }
@@ -269,8 +272,9 @@ library SaleItemList {
     function setNearbys(
         ItemWrapper storage itemWrapper,
         uint256 prev,
-        uint256 next
-    ) private {
+        uint256 next)
+        private
+    {
         itemWrapper.nearbyWrappers[true] = next;
         itemWrapper.nearbyWrappers[false] = prev;
     }
@@ -279,10 +283,12 @@ library SaleItemList {
         return list.rootId > 0;
     }
 
-    function addToInternalArray(List storage list, SaleItem.Data memory item)
+    function addToInternalArray(List storage list, Sale.Data memory item)
         private
         returns (uint256)
     {
+        initIfNeed(list);
+
         uint256 itemId = 0;
         if (list.freeIndexesLength > 0) {
             itemId = list.freeIndexes[list.freeIndexesLength - 1];
@@ -297,5 +303,18 @@ library SaleItemList {
         }
 
         return itemId;
+    }
+
+    function initIfNeed(List storage list)
+        private
+    {
+        if(list.nextWrapperId == 0)
+        {
+            require(list.rootId == 0 &&
+                list.freeIndexesLength == 0 &&
+                list.lastId == 0 &&
+                list.length.current() == 0, "Internal error with List Implementation");
+            list.nextWrapperId = 1;
+        }
     }
 }

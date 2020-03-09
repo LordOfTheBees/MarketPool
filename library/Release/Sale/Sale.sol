@@ -13,12 +13,13 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
  * overflow check, thereby saving gas. This does assume however correct usage, in that the underlying `_value` is never
  * directly accessed.
  */
-library SaleItem {
+library Sale {
     using SafeMath for uint256;
 
     struct Data {
         uint256 marketId;
         uint256 itemTypeId;
+        uint256 priceInWei;
         uint256 remainingSupply;
         uint256 totalSupply;
 
@@ -30,15 +31,15 @@ library SaleItem {
      * @dev Checks whether it is possible to release an item
      * @return true if it possible
      */
-    function realeasePossible(Data storage data) internal view returns (bool) {
-        return enable && (!data.isFinal || data.remainingSupply > 0);
+    function realeasePossible(Data memory data) internal pure returns (bool) {
+        return data.enable && (!data.isFinal || data.remainingSupply > 0);
     }
 
     /**
      * @dev reduces the number of remaining objects by 1 if it Final
      */
     function recordItemRelease(Data storage data) internal {
-        if (enable && data.isFinal && data.remainingSupply > 0)
+        if (data.enable && data.isFinal && data.remainingSupply > 0)
             data.remainingSupply = SafeMath.sub(data.remainingSupply, 1);
     }
 }

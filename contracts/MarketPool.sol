@@ -24,6 +24,21 @@ contract MarketPool is Ownable {
     mapping (uint256 => address) marketToOwner;
 
 
+
+    receive() external payable {
+    }
+    
+    fallback() external payable {
+    }
+
+    function withdraw() external onlyOwner {
+        address payable _owner = payable(owner());
+        _owner.transfer(address(this).balance);
+    }
+
+
+
+
     /**
      * @notice Create new Market for sender.
      * @param name The name of marketplace
