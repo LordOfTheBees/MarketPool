@@ -18,6 +18,19 @@ let testError = async function (testFunction, errorMessage, needLogError = false
     if(withoutError) throw errorMessage;
 }
 
+/**
+ * BigNumber array transform to number array
+ * @param {BN[]} bnArray a function that should fall with an error when it is called
+ * @returns {number[]}
+ */
+function toNumberArray(bnArray) {
+    let resultArray = [];
+    bnArray.forEach(element => {
+        resultArray.push(element.toNumber());
+    });
+    return resultArray;
+}
+
 function ethToWei(ethCount) {
     return web3.utils.toWei(ethCount.toString(), "ether");
 }
@@ -146,206 +159,125 @@ async function transferItemOwnership(instance, data, from){
     return { marketId: marketId,  itemId: itemId, previousOwner: previousOwner, newOwner: newOwner, savedOwner: savedOwner};
 }
 
+
+
+
 /**
  * Creating new Sale data for Releasing items
  * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, itemTypeId:number, totalSupply:number, priceInWei:number}} data data
+ * @param {{marketId:number, itemTypeIdArray:number[], totalSupply:number, priceInWei:number, enable:boolean}} data data
  * @param {address} from account which call this transaction
- * @returns {{marketId:number, itemTypeId:number}}
+ * @returns {{marketId:number, saleReleaseInnerId:number}}
  */
-async function createSaleData(instance, data, from) {
+async function createSaleRelease(instance, data, from) {
     let marketId;
-    let itemTypeId;
+    let saleReleaseInnerId;
 
-    let result = await instance.createSaleData(
+    let result = await instance.createSaleRelease(
         data.marketId,
-        data.itemTypeId,
+        data.itemTypeIdArray,
         data.totalSupply,
         data.priceInWei,
+        data.enable,
         {from:from});
     try {
-        await truffleAssert.eventEmitted(result , 'SaleDataCreated', async (res) => {
+        await truffleAssert.eventEmitted(result , 'SaleReleaseCreated', async (res) => {
             marketId = res.marketId.toNumber();
-            itemTypeId = res.itemTypeId.toNumber();
+            saleReleaseInnerId = res.saleReleaseInnerId.toNumber();
         });
     }
     catch(exception){
         console.log(exception);
     }
 
-    return {marketId:marketId, itemTypeId:itemTypeId}
+    return {marketId:marketId, saleReleaseInnerId:saleReleaseInnerId}
 }
 
 /**
  * Remove existing Sale data
  * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, itemTypeId:number}} data data
+ * @param {{marketId:number, saleReleaseInnerId:number}} data data
  * @param {address} from account which call this transaction
- * @returns {{marketId:number, itemTypeId:number}}
+ * @returns {{marketId:number, saleReleaseInnerId:number}}
  */
-async function removeSaleData(instance, data, from) {
+async function removeSaleRelease(instance, data, from) {
     let marketId;
-    let itemTypeId;
+    let saleReleaseInnerId;
 
-    await instance.removeSaleData(
+    let result = await instance.removeSaleRelease(
         data.marketId,
-        data.itemTypeId,
+        data.saleReleaseInnerId,
         {from:from});
     try {
-        await truffleAssert.eventEmitted(result , 'SaleDataRemoved', async (res) => {
+        await truffleAssert.eventEmitted(result, 'SaleReleaseRemoved', async (res) => {
             marketId = res.marketId.toNumber();
-            itemTypeId = res.itemTypeId.toNumber();
+            saleReleaseInnerId = res.saleReleaseInnerId.toNumber();
         });
     }
     catch(exception){
         console.log(exception);
     }
 
-    return {marketId:marketId, itemTypeId:itemTypeId}
-}
-
-/**
- * Enable existing Sale data
- * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, itemTypeId:number}} data data
- * @param {address} from account which call this transaction
- * @returns {{marketId:number, itemTypeId:number}}
- */
-async function enableSaleData(instance, data, from) {
-    let marketId;
-    let itemTypeId;
-
-    await instance.enableSaleData(
-        data.marketId,
-        data.itemTypeId,
-        {from:from});
-    try {
-        await truffleAssert.eventEmitted(result , 'SaleDataEnabled', async (res) => {
-            marketId = res.marketId.toNumber();
-            itemTypeId = res.itemTypeId.toNumber();
-        });
-    }
-    catch(exception){
-        console.log(exception);
-    }
-
-    return {marketId:marketId, itemTypeId:itemTypeId}
-}
-
-/**
- * Disable existing Sale data
- * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, itemTypeId:number}} data data
- * @param {address} from account which call this transaction
- * @returns {{marketId:number, itemTypeId:number}}
- */
-async function disableSaleData(instance, data, from) {
-    let marketId;
-    let itemTypeId;
-
-    await instance.disableSaleData(
-        data.marketId,
-        data.itemTypeId,
-        {from:from});
-    try {
-        await truffleAssert.eventEmitted(result , 'SaleDataDisabled', async (res) => {
-            marketId = res.marketId.toNumber();
-            itemTypeId = res.itemTypeId.toNumber();
-        });
-    }
-    catch(exception){
-        console.log(exception);
-    }
-
-    return {marketId:marketId, itemTypeId:itemTypeId}
+    return {marketId:marketId, saleReleaseInnerId:saleReleaseInnerId}
 }
 
 /**
  * Update existing Sale data
  * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, itemTypeId:number, totalSupply:number, priceInWei:number}} data data
+ * @param {{marketId:number, saleReleaseInnerId:number, totalSupply:number, priceInWei:number, enable:boolean}} data data
  * @param {address} from account which call this transaction
- * @returns {{marketId:number, itemTypeId:number}}
+ * @returns {{marketId:number, saleReleaseInnerId:number}}
  */
-async function updateSaleDataWithTotalSupply(instance, data, from) {
+async function updateSaleRelease(instance, data, from) {
     let marketId;
-    let itemTypeId;
+    let saleReleaseInnerId;
 
-    await instance.updateSaleData(
+    let result = await instance.updateSaleRelease(
         data.marketId,
-        data.itemTypeId,
+        data.saleReleaseInnerId,
         data.totalSupply,
         data.priceInWei,
+        data.enable,
         {from:from});
     try {
-        await truffleAssert.eventEmitted(result , 'SaleDataUpdated', async (res) => {
+        await truffleAssert.eventEmitted(result , 'SaleReleaseUpdated', async (res) => {
             marketId = res.marketId.toNumber();
-            itemTypeId = res.itemTypeId.toNumber();
+            saleReleaseInnerId = res.saleReleaseInnerId.toNumber();
         });
     }
     catch(exception){
         console.log(exception);
     }
 
-    return {marketId:marketId, itemTypeId:itemTypeId}
-}
-
-/**
- * Update existing Sale data
- * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, itemTypeId:number, priceInWei:number}} data data
- * @param {address} from account which call this transaction
- * @returns {{marketId:number, itemTypeId:number}}
- */
-async function updateSaleData(instance, data, from) {
-    let marketId;
-    let itemTypeId;
-
-    await instance.updateSaleData(
-        data.marketId,
-        data.itemTypeId,
-        data.priceInWei,
-        {from:from});
-    try {
-        await truffleAssert.eventEmitted(result , 'SaleDataUpdated', async (res) => {
-            marketId = res.marketId.toNumber();
-            itemTypeId = res.itemTypeId.toNumber();
-        });
-    }
-    catch(exception){
-        console.log(exception);
-    }
-
-    return {marketId:marketId, itemTypeId:itemTypeId}
+    return {marketId:marketId, saleReleaseInnerId:saleReleaseInnerId}
 }
 
 /**
  * Buy item
  * @param {contract} instance current contract deployed instance
- * @param {{marketId:number, itemTypeId:number, itemOwner:address}} data
+ * @param {{marketId:number, saleReleaseInnerId:number, newOwner:address}} data
  * @param {address} from account which call this transaction
- * @returns {{marketId:number, typeId:number, itemId:number, savedData:struct}}
+ * @param {number} value number of wei to send
+ * @returns {{marketId:number, saleReleaseInnerId:number, itemIdArray:number[]}}
  */
-async function buyItem(instance, data, from){
-    let typeId;
+async function buySaleRelease(instance, data, from, value){
+    let saleReleaseInnerId;
     let marketId;
-    let itemId;
-    let savedData
+    let itemIdArray
 
-    let result = await instance.buyItem(data.marketId, data.typeId, data.itemOwner, {from: from});
+    let result = await instance.buySaleRelease(data.marketId, data.saleReleaseInnerId, data.newOwner, {from: from, value: value});
     try {
-        await truffleAssert.eventEmitted(result , 'ItemCreated', async (res) => {
+        await truffleAssert.eventEmitted(result , 'SaleReleaseBought', async (res) => {
             marketId = res.marketId.toNumber();
-            typeId = res.itemTypeId.toNumber();
-            itemId = res.itemId.toNumber();
+            saleReleaseInnerId = res.saleReleaseInnerId.toNumber();
+            itemIdArray = toNumberArray(res.itemIdArray);
         });
-        savedData = await instance.marketToItems.call(marketId, itemId);
     }
     catch(exception){
         console.log(exception);
     }
 
-    return { marketId: marketId,  typeId: typeId, itemId: itemId, savedData: savedData};
+    return { marketId: marketId,  saleReleaseInnerId: saleReleaseInnerId, itemIdArray: itemIdArray};
 }
 
 
@@ -356,7 +288,9 @@ const zeroAddress = '0x0000000000000000000000000000000000000000';
 
 
 module.exports.zeroAddress                      = zeroAddress;
+
 module.exports.testError                        = testError;
+module.exports.toNumberArray                    = toNumberArray
 module.exports.ethToWei                         = ethToWei;
 module.exports.weiToEther                       = weiToEther;
 
@@ -366,10 +300,7 @@ module.exports.createItemType                   = createItemType;
 module.exports.createItem                       = createItem;
 module.exports.transferItemOwnership            = transferItemOwnership;
 
-module.exports.createSaleData                   = createSaleData;
-module.exports.removeSaleData                   = removeSaleData;
-module.exports.enableSaleData                   = enableSaleData;
-module.exports.disableSaleData                  = disableSaleData;
-module.exports.updateSaleDataWithTotalSupply    = updateSaleDataWithTotalSupply;
-module.exports.updateSaleData                   = updateSaleData;
-module.exports.buyItem                          = buyItem;
+module.exports.createSaleRelease                = createSaleRelease;
+module.exports.removeSaleRelease                = removeSaleRelease;
+module.exports.updateSaleRelease                = updateSaleRelease;
+module.exports.buySaleRelease                   = buySaleRelease;

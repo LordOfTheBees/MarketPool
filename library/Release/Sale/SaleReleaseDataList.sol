@@ -1,26 +1,27 @@
 pragma solidity >=0.6.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/drafts/Counters.sol";
+import "./SaleReleasePosition.sol";
 
-library List {
+library SaleReleaseDataList {
     using SafeMath for uint256;
-
-    struct Uniq_Item_Name_For_Replacing {
-        string data;
-    }
+    using SaleReleasePosition for SaleReleasePosition.Data;
+    using Counters for Counters.Counter;
 
     struct ItemWrapper {
-        Uniq_Item_Name_For_Replacing item;
+        SaleReleasePosition.Data item;
         mapping(bool => uint256) nearbyWrappers; //false - previous item, true - next item
     }
 
     struct List {
         uint256 rootId;
         uint256 lastId;
-        uint256 length;
 
         uint256 freeIndexesLength;
         uint256 nextWrapperId;
+
+        Counters.Counter length;
 
         mapping(uint256 => uint256) freeIndexes;
         mapping(uint256 => ItemWrapper) wrappers;
@@ -28,109 +29,20 @@ library List {
 
     /**
      * @dev Creating new List
-     * @return (List)
+     * @return List
      */
     function newList() internal pure returns (List memory) {
-        return List(0, 0, 0, 0, 1);
+        return List(0, 0, 0, 1, Counters.Counter(0));
     }
 
-    /**
-     * @dev Return current List length
-     * @return (uin256)
-     */
-    function length(List storage list) public view returns (uint256) {
-        return list.length;
-    }
-
-    /**
-     * @dev Function for loop iterating. O(1).
-     * For start looping send zero.
-     * When loop finished, function returns zero inner index (this index does not using for items).
-     * If you want get Item, call the function {getByInnerIndex}
-     * Example:
-     uint256 innerIndex = list.next(0);
-     while(innerIndex != 0) {
-         Item storage item = list.getByInnerIndex(innerIndex);
-         //working with item
-         innerIndex = list.next(innerIndex);
-     }
-     * @return (innerIndex:uin256)
-     */
-    function next(List storage list, uint256 currentInnerIndex)
-        public
-        view
-        returns (uint256)
-    {
-        if(currentInnerIndex == 0) return list.rootId;
-        return list.wrappers[currentInnerIndex].nearbyWrappers[true];
-    }
-
-    /**
-     * @dev Find and return item by index. O(n).
-     * @return (Item storage)
-     */
-    function get(List storage list, uint256 index)
-        public
-        view
-        returns (Uniq_Item_Name_For_Replacing storage)
-    {
-        require(index < list.length, "Out of range exception");
-
-        uint256 currentItemId = list.rootId;
-        for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
-            currentItemId = list.wrappers[currentItemId].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
-        }
-
-        return list.wrappers[currentItemId].item;
-    }
-
-    /**
-     * @dev Find and return item by index. O(n).
-     * @return (Item storage item, innerIndex)
-     */
-    function getWithInnerIndex(List storage list, uint256 index)
-        public
-        view
-        returns (Uniq_Item_Name_For_Replacing storage item, uint256 innerIndex)
-    {
-        require(index < list.length, "Out of range exception");
-
-        uint256 currentItemId = list.rootId;
-        for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
-            currentItemId = list.wrappers[currentItemId].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
-        }
-
-        return (list.wrappers[currentItemId].item, currentItemId);
-    }
-
-    /**
-     * @dev Return item by inner index. O(1).
-     * @return (Item storage)
-     */
-    function getByInnerIndex(List storage list, uint256 index)
-        public
-        view
-        returns (Uniq_Item_Name_For_Replacing storage)
-    {
-        return list.wrappers[index].item;
-    }
-
-    /**
-     * @dev Return Last added item. O(1).
-     * @return (Item storage)
-     */
-    function last(List storage list) public view returns (Uniq_Item_Name_For_Replacing storage) {
-        require(list.lastId != 0, "List does not have elements");
-        return list.wrappers[list.lastId].item;
-    }
 
     /**
      * @dev Add new item to list's end. O(1).
      * If you want change item's data, call {get} or {getByInnerIndex}, they returns stored items in this list.
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
-     * @return (normalIndex: uint256; innerIndex: uint256)
+     * @return normalIndex and innerIndex
      */
-    function add(List storage list, Uniq_Item_Name_For_Replacing memory item)
+    function add(List storage list, SaleReleasePosition.Data memory item)
         internal
         returns (uint256 normalIndex, uint256 innerIndex)
     {
@@ -141,24 +53,24 @@ library List {
             list.wrappers[list.lastId].nearbyWrappers[true] = newItemId;
             setNearbys(list.wrappers[newItemId], list.lastId, 0);
         }
-        uint256 normalId = list.length;
+        uint256 normalId = list.length.current();
         list.lastId = newItemId;
-        list.length = SafeMath.add(list.length, 1);
+        list.length.increment();
 
-        return (normalId, list.lastId);
+        return (normalId, newItemId);
     }
 
     /**
      * @dev Insert new item by index. O(n)
      * If you want change item's data, call {get} or {getByInnerIndex}, they returns stored items in this list.
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
-     * @return (innerIndex: uint256)
+     * @return innerIndex returned
      */
-    function insert(List storage list, Uniq_Item_Name_For_Replacing memory item, uint256 index)
+    function insert(List storage list, SaleReleasePosition.Data memory item, uint256 index)
         internal
         returns (uint256)
     {
-        require(index < list.length, "Out of range exception");
+        require(index < list.length.current(), "Out of range exception");
 
         uint256 newItemId = addToInternalArray(list, item);
         if (index == 0) {
@@ -169,7 +81,7 @@ library List {
             list.rootId = newItemId;
         } else {
             uint256 currentItemId = list.rootId;
-            for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
+            for (uint256 i = 1; i <= index; i = i.add(1)) {
                 currentItemId = list.wrappers[currentItemId]
                     .nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
             }
@@ -188,7 +100,7 @@ library List {
             );
         }
 
-        list.length = SafeMath.add(list.length, 1);
+        list.length.increment();
         return newItemId;
     }
 
@@ -198,11 +110,11 @@ library List {
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
      * @return (innerIndex: uint256)
      */
-    function replaceByNormalId(List storage list, uint256 index, Uniq_Item_Name_For_Replacing memory item)
+    function replaceByNormalId(List storage list, uint256 index, SaleReleasePosition.Data memory item)
         internal
         returns (uint256)
     {
-        require(index < list.length, "Out of range exception");
+        require(index < list.length.current(), "Out of range exception");
 
         uint256 itemIdToReplace = list.rootId;
         for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
@@ -218,7 +130,7 @@ library List {
      * If you want change item's data, call {get} or {getByInnerIndex}, they returns stored items in this list.
      * Remember, that in this List save only copied item. Therefore, items can be store only in one List
      */
-    function replaceByInnerlId(List storage list, uint256 index, Uniq_Item_Name_For_Replacing memory item)
+    function replaceByInnerlId(List storage list, uint256 index, SaleReleasePosition.Data memory item)
         internal
     {
         list.wrappers[index].item = item;
@@ -230,10 +142,10 @@ library List {
     function removeByNormalId(List storage list, uint256 index)
         internal
     {
-        require(index < list.length, "Out of range exception");
+        require(index < list.length.current(), "Out of range exception");
 
         uint256 itemIdToRemove = list.rootId;
-        for (uint256 i = 1; i <= index; i = SafeMath.add(i, 1)) {
+        for (uint256 i = 1; i <= index; i = i.add(1)) {
             itemIdToRemove = list.wrappers[itemIdToRemove].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
         }
         uint256 nextId = list.wrappers[itemIdToRemove].nearbyWrappers[true];
@@ -249,9 +161,10 @@ library List {
         }
 
         list.freeIndexes[list.freeIndexesLength] = itemIdToRemove;
-        list.freeIndexesLength = SafeMath.add(list.freeIndexesLength, 1);
+        list.freeIndexesLength = list.freeIndexesLength.add(1);
+        setNearbys(list.wrappers[itemIdToRemove], 0, 0); //удаляем зависимости для дальнейшего определения  существования
 
-        list.length = SafeMath.sub(list.length, 1);
+        list.length.decrement();
     }
 
     /**
@@ -273,9 +186,100 @@ library List {
         }
 
         list.freeIndexes[list.freeIndexesLength] = innerIndex;
-        list.freeIndexesLength = SafeMath.add(list.freeIndexesLength, 1);
+        list.freeIndexesLength = list.freeIndexesLength.add(1);
+        setNearbys(list.wrappers[innerIndex], 0, 0); //удаляем зависимости для дальнейшего определения  существования
 
-        list.length = SafeMath.sub(list.length, 1);
+        list.length.decrement();
+    }
+
+        /**
+     * @dev Return current List length
+     * @return uin256
+     */
+    function length(List storage list) public view returns (uint256) {
+        return list.length.current();
+    }
+
+    /**
+     * @dev Function for loop iterating. O(1).
+     * For start looping send zero.
+     * When loop finished, function returns zero inner index (this index does not using for items).
+     * If you want get Item, call the function {getByInnerIndex}
+     * Example:
+     uint256 innerIndex = list.iterate(0);
+     while(innerIndex != 0) {
+         Item storage item = list.getByInnerIndex(innerIndex);
+         //working with item
+         innerIndex = list.iterate(innerIndex);
+     }
+     * @return innerIndex returned
+     */
+    function iterate(List storage list, uint256 currentInnerIndex)
+        public
+        view
+        returns (uint256)
+    {
+        if(currentInnerIndex == 0) return list.rootId;
+        return list.wrappers[currentInnerIndex].nearbyWrappers[true];
+    }
+
+    /**
+     * @dev Find and return item by index. O(n).
+     */
+    function get(List storage list, uint256 index)
+        public
+        view
+        returns (SaleReleasePosition.Data storage item, uint256 innerId)
+    {
+        require(index < list.length.current(), "Out of range exception");
+
+        uint256 currentItemId = list.rootId;
+        for (uint256 i = 1; i <= index; i = i.add(1)) {
+            currentItemId = list.wrappers[currentItemId].nearbyWrappers[true]; //берём текущий враппер и берём у него id следующего
+        }
+
+        return (list.wrappers[currentItemId].item, currentItemId);
+    }
+
+    /**
+     * @dev Return item by inner index. O(1).
+     * @return Item storage
+     */
+    function getByInnerIndex(List storage list, uint256 index)
+        public
+        view
+        returns (SaleReleasePosition.Data storage)
+    {
+        return list.wrappers[index].item;
+    }
+
+    /**
+     * @dev Return Last added item. O(1).
+     * @return Item storage
+     */
+    function last(List storage list)
+        public
+        view
+        returns (SaleReleasePosition.Data storage)
+    {
+        require(list.lastId != 0, "List does not have elements");
+        return list.wrappers[list.lastId].item;
+    }
+
+    function existsById(List storage list, uint256 id)
+        public
+        view
+        returns (bool)
+    {
+        return id < list.length.current();
+    }
+
+    function existsByInnerId(List storage list, uint256 innerId)
+        public
+        view
+        returns (bool)
+    {
+        return list.rootId == innerId || list.wrappers[innerId].nearbyWrappers[true] != 0 || list.wrappers[innerId].nearbyWrappers[false] != 0;
     }
 
     /**
@@ -283,17 +287,17 @@ library List {
      * @return Item[] memory
      */
     function toArray(List storage list)
-        public
+        internal
         view
-        returns (Uniq_Item_Name_For_Replacing[] memory)
+        returns (SaleReleasePosition.Data[] memory)
     {
-        Uniq_Item_Name_For_Replacing[] memory itemsArray = new Uniq_Item_Name_For_Replacing[](list.length);
+        SaleReleasePosition.Data[] memory itemsArray = new SaleReleasePosition.Data[](list.length.current());
         if (!rootExist(list)) return itemsArray;
 
         uint256 currentItemId = list.rootId;
         itemsArray[0] = list.wrappers[currentItemId].item;
 
-        for (uint256 i = 1; i < list.length; i = SafeMath.add(i, 1)) {
+        for (uint256 i = 1; i < list.length.current(); i = i.add(1)) {
             currentItemId = list.wrappers[currentItemId].nearbyWrappers[true];
             itemsArray[i] = list.wrappers[currentItemId].item;
         }
@@ -322,8 +326,9 @@ library List {
     function setNearbys(
         ItemWrapper storage itemWrapper,
         uint256 prev,
-        uint256 next
-    ) private {
+        uint256 next)
+        private
+    {
         itemWrapper.nearbyWrappers[true] = next;
         itemWrapper.nearbyWrappers[false] = prev;
     }
@@ -332,23 +337,38 @@ library List {
         return list.rootId > 0;
     }
 
-    function addToInternalArray(List storage list, Uniq_Item_Name_For_Replacing memory item)
+    function addToInternalArray(List storage list, SaleReleasePosition.Data memory item)
         private
         returns (uint256)
     {
+        initIfNeed(list);
+
         uint256 itemId = 0;
         if (list.freeIndexesLength > 0) {
             itemId = list.freeIndexes[list.freeIndexesLength - 1];
-            list.freeIndexesLength = SafeMath.sub(list.freeIndexesLength, 1);
+            list.freeIndexesLength = list.freeIndexesLength.sub(1);
 
             list.wrappers[itemId] = ItemWrapper(item);
         } else {
             //require(list.manager.listToNextWrapperId[list.id] == 1, "next index is zero!!!");
             itemId = list.nextWrapperId;
-            list.nextWrapperId = SafeMath.add(list.nextWrapperId, 1);
+            list.nextWrapperId = list.nextWrapperId.add(1);
             list.wrappers[itemId] = ItemWrapper(item);
         }
 
         return itemId;
+    }
+
+    function initIfNeed(List storage list)
+        private
+    {
+        if(list.nextWrapperId == 0)
+        {
+            require(list.rootId == 0 &&
+                list.freeIndexesLength == 0 &&
+                list.lastId == 0 &&
+                list.length.current() == 0, "Internal error with List Implementation");
+            list.nextWrapperId = 1;
+        }
     }
 }

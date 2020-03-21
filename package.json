@@ -7,7 +7,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile-all" : "truffle complile",
+    "migrate" : "truffle migrate",
+    "migrate-reset" : "truffle migrate --reset",
+    "test-all": "truffle test --network development",
+    "test-ItemRelease-Sale-Common-Test": "truffle test .\\test\\MarketPool_ItemRelease_Sale_Test_Common.js --network development"
   },
   "keywords": [],
   "author": "",
