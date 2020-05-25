@@ -5,8 +5,6 @@ const MarketPool = artifacts.require("./MarketPool.sol");
 const MarketPool_Items = artifacts.require("./MarketPool_Items.sol");
 
 module.exports = deployer => {
-    deployer.deploy(Counters);
-    
     deployer.link(SafeMath, Item);
     deployer.deploy(Item);
 

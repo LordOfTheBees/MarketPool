@@ -21,6 +21,7 @@ library SaleReleasePosition {
         uint256 priceInWei;
         uint256 remainingSupply;
         uint256 totalSupply;
+        uint256 innerId;
 
         bool isFinal;
         bool enable;

@@ -192,11 +192,11 @@ library SaleReleaseDataList {
         list.length.decrement();
     }
 
-        /**
+    /**
      * @dev Return current List length
      * @return uin256
      */
-    function length(List storage list) public view returns (uint256) {
+    function getLength(List storage list) public view returns (uint256) {
         return list.length.current();
     }
 

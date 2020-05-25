@@ -2,6 +2,7 @@ pragma solidity >=0.6.0;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/ownership/Ownable.sol';
+import "@openzeppelin/contracts/drafts/Counters.sol";
 
 /**
  * @author LordOfTheBees
@@ -9,8 +10,9 @@ import '@openzeppelin/contracts/ownership/Ownable.sol';
  */
 contract MarketPool is Ownable {
     using SafeMath for uint256;
+    using Counters for Counters.Counter;
 
-    event MarketCreated(uint256 indexed marketId);
+    event MarketCreated(uint256 indexed marketId, address indexed owner);
     event MarketOwnershipTransferred(uint256 indexed marketId, address indexed previousOwner, address indexed newOwner);
 
     struct Market {
@@ -22,6 +24,8 @@ contract MarketPool is Ownable {
 
     // ID магазина и их владельцы
     mapping (uint256 => address) marketToOwner;
+
+    mapping (address => Counters.Counter) addressToMarketCount;
 
 
 
@@ -48,15 +52,15 @@ contract MarketPool is Ownable {
         markets.push(Market(name));
         uint256 id = markets.length.sub(1);
         marketToOwner[id] = msg.sender;
-        emit MarketCreated(id);
+        addressToMarketCount[msg.sender].increment();
+        emit MarketCreated(id, msg.sender);
         return id;
     }
 
     /**
      * @notice Return all data of market by its id
      */
-    function getMarketData(uint256 marketId) public view returns (string memory name) {
-        require(marketExist(marketId), "MarketPool: Market does not exist");
+    function getMarketData(uint256 marketId) public view onlyMarketExists(marketId) returns (string memory name) {
         Market storage marketData = markets[marketId];
         return (marketData.name);
     }
@@ -66,6 +70,7 @@ contract MarketPool is Ownable {
      */
     function renounceMarketOwnership(uint256 marketId) public onlyMarketOwner(marketId) {
         emit MarketOwnershipTransferred(marketId, marketToOwner[marketId], address(0));
+        addressToMarketCount[msg.sender].decrement();
         marketToOwner[marketId] = address(0);
     }
 
@@ -75,21 +80,25 @@ contract MarketPool is Ownable {
     function transferMarketOwnership(uint256 marketId, address newOwner) public onlyMarketOwner(marketId) notZeroAddress(newOwner) {
         emit MarketOwnershipTransferred(marketId, marketToOwner[marketId], newOwner);
         marketToOwner[marketId] = newOwner;
+        addressToMarketCount[msg.sender].decrement();
+        addressToMarketCount[newOwner].increment();
     }
     
     /**
      * @notice Return addres of market owner
      */
-    function getMarketOwner(uint256 marketId) public view returns (address) {
-        require(marketExist(marketId), "MarketPool: Market does not exist");
+    function getMarketOwner(uint256 marketId) public view onlyMarketExists(marketId) returns (address) {
         return marketToOwner[marketId];
+    }
+
+    function getMarketCounts(address owner) public view returns (uint256) {
+        return addressToMarketCount[owner].current();
     }
     
     /**
      * @notice Chech if it is market owner 
      */
-    function isMarketOwner(uint256 marketId) public view returns (bool) {
-        require(marketExist(marketId), "MarketPool: Market does not exist");
+    function isMarketOwner(uint256 marketId) public view onlyMarketExists(marketId) returns (bool) {
         return marketToOwner[marketId] == msg.sender;
     }
     
@@ -103,6 +112,11 @@ contract MarketPool is Ownable {
 
     modifier notZeroAddress(address checkAddress) {
         require(checkAddress != address(0), "CheckAddress is the zero address");
+        _;
+    }
+
+    modifier onlyMarketExists(uint256 marketId) {
+        require(marketExist(marketId), "MarketPool: Market does not exist");
         _;
     }
 
