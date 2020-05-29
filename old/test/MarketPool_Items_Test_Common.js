@@ -1,7 +1,7 @@
 const MarketPool_Items = artifacts.require("./MarketPool_Items.sol");
 
 const truffleAssert = require('truffle-assertions');
-const testHelper = require("../jsmoduls/test-helper.js");
+const testHelper = require("../../jsmoduls/test-helper.js");
 
 contract("MarketPool_Items Common Test", async accounts => {
 
