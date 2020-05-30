@@ -6,7 +6,7 @@ const truffleAssert = require('truffle-assertions');
  * @param {string} errorMessage output error if the function did not fall
  * @param {boolean} needLogError if true, then error will show in log
  */
-let testError = async function (testFunction, errorMessage, needLogError = false) {
+let throws = async function (testFunction, errorMessage, needLogError = false) {
     withoutError = true;
     try {
         await testFunction();
@@ -14,6 +14,24 @@ let testError = async function (testFunction, errorMessage, needLogError = false
     catch (exception) {
         if (needLogError) console.log(exception);
         withoutError = false;
+    }
+    if (withoutError) throw errorMessage;
+}
+
+/**
+ * Calls the passed function and waits for it does not fall
+ * @param {function} testFunction a function that should fall with an error when it is called
+ * @param {string} errorMessage output error if the function did not fall
+ * @param {boolean} needLogError if true, then error will show in log
+ */
+let doesNotThrow = async function (testFunction, errorMessage, needLogError = false) {
+    withError = false;
+    try {
+        await testFunction();
+    }
+    catch (exception) {
+        if (needLogError) console.log(exception);
+        withError = true;
     }
     if (withoutError) throw errorMessage;
 }
@@ -47,7 +65,8 @@ const zeroAddress = '0x0000000000000000000000000000000000000000';
 
 module.exports.zeroAddress                      = zeroAddress;
 
-module.exports.testError                        = testError;
+module.exports.throws                           = throws;
+module.exports.doesNotThrow                     = doesNotThrow;
 module.exports.toNumberArray                    = toNumberArray
 module.exports.ethToWei                         = ethToWei;
 module.exports.weiToEther                       = weiToEther;
