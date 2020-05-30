@@ -1,49 +1,93 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.0;
+pragma solidity ^0.6.8;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
-import '../ContractSubscriber.sol';
+import '../library/Markets.sol';
+import '../common/ContractSubscriber.sol';
+import '../common/EtherContract.sol';
 
-contract MarketsData is ContractSubscriber, ERC165 {
+contract MarketsData is ContractSubscriber, EtherContract, ERC165 {
     using SafeMath for uint256;
     using Counters for Counters.Counter;
 
-    event MarketCreated(uint256 indexed marketId, address indexed owner);
-    event MarketOwnershipTransferred(uint256 indexed marketId, address indexed from, address indexed to);
-
-    struct Market {
-        string name;
-        string url;
-        string tags;
-        string description;
-    }
-
-    Market[] public markets;
+    //Массив магазинов
+    Markets.Market[] private markets;
 
     //ID магазина к владельцу
-    mapping (uint256 => address) marketToOwner;
+    mapping (uint256 => address) private marketToOwner;
 
     //Аддресс к кол-ву магазинов
-    mapping (address => Counters.Counter) addressToMarketsCount;
+    mapping (address => Counters.Counter) private addressToMarketsCount;
 
-    receive() external payable { }
-    fallback() external payable { }
-    function withdraw(uint256 amount) external onlyOwner {
-        require(address(this).balance >= amount, "Not enought");
-        address payable _owner = payable(owner());
-        _owner.transfer(address(this).balance);
-    }
-
-    function createMarket(
-        address owner,
+    /**
+     * @notice Create new market and add to array
+     */
+    function addMarket(
         string calldata name,
         string calldata url,
         string calldata tags,
-        string calldata description) external onlySubscriber 
-    {
-        
+        string calldata description
+    )
+    external
+    onlySubscriber
+    returns (uint256) {
+        markets.push(Markets.Market(name, url, tags, description));
+        return markets.length.sub(1);
+    }
+
+    /**
+     * @notice Change market owner and count of markets. If in market already has owner, it will be changed
+     */
+    function changeMarketOwner(uint256 marketId, address marketOwner)
+    external
+    onlySubscriber {
+        if (marketToOwner[marketId] != address(0)) {
+            addressToMarketsCount[marketToOwner[marketId]].decrement();
+        }
+        marketToOwner[marketId] = marketOwner;
+        addressToMarketsCount[marketOwner].increment();
+    }
+
+    /**
+     * @notice Get market data
+     */
+    function getMarket(uint256 marketId)
+    external
+    view
+    returns (
+        string memory name,
+        string memory url,
+        string memory tags,
+        string memory description
+    ) {
+        Markets.Market memory market = markets[marketId];
+        return (
+            market.name,
+            market.url,
+            market.tags,
+            market.description
+        );
+    }
+
+    /**
+     * @notice Get market owner
+     */
+    function getMarketOwner(uint256 marketId)
+    external
+    view
+    returns (address) {
+        return marketToOwner[marketId];
+    }
+
+    /**
+     * @notice Get markets count for address
+     */
+    function getMarketsCount(address marketOwner)
+    external
+    view
+    returns (uint256) {
+        return addressToMarketsCount[marketOwner].current();
     }
 }
