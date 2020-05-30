@@ -24,7 +24,7 @@ contract MarketsData is ContractSubscriber, EtherContract, ERC165 {
     /**
      * @notice Create new market and add to array
      */
-    function addMarket(
+    function createMarket(
         string calldata name,
         string calldata url,
         string calldata tags,
@@ -49,6 +49,17 @@ contract MarketsData is ContractSubscriber, EtherContract, ERC165 {
         marketToOwner[marketId] = marketOwner;
         addressToMarketsCount[marketOwner].increment();
     }
+
+    /**
+     * @notice Check market exists by id
+     */
+    function marketExists(uint256 marketId)
+    public
+    view
+    returns (bool) {
+        return markets.length > marketId;
+    }
+
 
     /**
      * @notice Get market data
@@ -84,10 +95,28 @@ contract MarketsData is ContractSubscriber, EtherContract, ERC165 {
     /**
      * @notice Get markets count for address
      */
-    function getMarketsCount(address marketOwner)
+    function getMarketsCountFor(address marketOwner)
     external
     view
     returns (uint256) {
         return addressToMarketsCount[marketOwner].current();
+    }
+
+    /**
+     * @notice Get markets count
+     */
+    function getMarketsCount()
+    external
+    view
+    returns (uint256) {
+        return markets.length;
+    }
+
+
+
+    function requireMarketExists(uint256 marketId)
+    public
+    view {
+        require(marketExists(marketId), "Market does not exists");
     }
 }
