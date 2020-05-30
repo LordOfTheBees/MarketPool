@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
-import "@openzeppelin/contracts/drafts/Counters.sol";
+import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
 import '../ContractSubscriber.sol';
 
